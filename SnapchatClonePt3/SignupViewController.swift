@@ -24,29 +24,56 @@ class SignupViewController: UIViewController, UITextFieldDelegate {
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
-    
+
     /*
         TODO:
-        
+
         Implement sign up functionality using the Firebase Auth create user function.
-        If an error occurs, you should display an error message using a UIAlertController (e.g. if the password is less than 6 characters long). 
-        Otherwise, using the user object that is returned from the createUser call, make a profile change request and set the user's displayName property to the name variable. 
+        If an error occurs, you should display an error message using a UIAlertController (e.g. if the password is less than 6 characters long).
+        Otherwise, using the user object that is returned from the createUser call, make a profile change request and set the user's displayName property to the name variable.
         After committing the change request, you should perform a segue to the main screen using the identifier "signupToMain"
- 
+
     */
     @IBAction func didAttemptSignup(_ sender: UIButton) {
         guard let email = emailField.text else { return }
         guard let password = passwordField.text else { return }
         guard let name = nameField.text else { return }
-        
+
         // YOUR CODE HERE
+        FIRAuth.auth()?.createUser(withEmail: email, password: password) { (user, error) in
+            if (error == nil) {
+                let changeRequest = user?.profileChangeRequest()
+                changeRequest?.displayName = name
+                changeRequest?.commitChanges() { (error1) in
+                    if (error1 != nil) {
+                    let alertController = UIAlertController(title: "Sign Up Error", message: "Error, profileChangeRequest failed", preferredStyle: .alert)
+                    let actionOk = UIAlertAction(title: "OK",
+                                                 style: .default,
+                                                 handler: nil)
+                    alertController.addAction(actionOk)
+                    self.present(alertController, animated: true, completion: nil)
+                    }
+                    else {
+                        self.performSegue(withIdentifier: "signupToMain", sender: self)
+                    }
+                }
+            } else {
+                let alertController = UIAlertController(title: "Sign Up Error", message: "Error, try again. Remember your password must be > 6 characters!", preferredStyle: .alert)
+                let actionOk = UIAlertAction(title: "OK",
+                                             style: .default,
+                                             handler: nil)
+                alertController.addAction(actionOk)
+                self.present(alertController, animated: true, completion: nil)
+
+            }
+        }
     }
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         return true
     }
-    
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         self.view.endEditing(true)
     }

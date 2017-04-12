@@ -17,16 +17,16 @@ class PostsTableViewController: UIViewController, UITableViewDelegate, UITableVi
         static let postBackgroundColor = UIColor.black
         static let postPhotoSize = UIScreen.main.bounds
     }
-    
+
     // Dictionary that maps IDs of images to the actual UIImage data
     var loadedImagesById: [String:UIImage] = [:]
-    
-    
+
+
     let currentUser = CurrentUser()
-    
+
     /// Table view holding all posts from each thread
     @IBOutlet weak var postTableView: UITableView!
-    
+
     /// Button that displays the image of the post selected by the user
     var postImageViewButton: UIButton = {
         var button = UIButton(frame: Constants.postPhotoSize)
@@ -34,30 +34,31 @@ class PostsTableViewController: UIViewController, UITableViewDelegate, UITableVi
         button.isHidden = true
         return button
     }()
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         postTableView.delegate = self
         postTableView.dataSource = self
         view.addSubview(postImageViewButton)
-        
+
         postImageViewButton.addTarget(self, action: #selector(self.hidePostImage(sender:)), for: UIControlEvents.touchUpInside)
-        
+
     }
     /*
         TODO:
-        Call the function to retrieve data for our tableview. 
+        Call the function to retrieve data for our tableview.
         (Hint): This should be pretty simple.
     */
     override func viewWillAppear(_ animated: Bool) {
         // YOUR CODE HERE
+        self.updateData()
     }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
-    
+
     /*
         TODO:
         Use the 'getPosts' function to retrieve all of the posts in the database. You'll need to pass in the currentUser property declared above so that we know if the posts have been read or not.
@@ -66,22 +67,36 @@ class PostsTableViewController: UIViewController, UITableViewDelegate, UITableVi
         - For each post in the array:
             - Add the post to the thread using the 'addPostToThread' function
             - Using the postImagePath property of the post, retrieve the image data from the storage module (there is a function in ImageFeed.swift that does this for you already).
-            - Create a UIImage from the data and add a new element to the 'loadedImagesById' variable using the image and post ID. 
+            - Create a UIImage from the data and add a new element to the 'loadedImagesById' variable using the image and post ID.
         - After iterating through all the posts, reload the tableview.
-     
+
     */
     func updateData() {
         // YOUR CODE HERE
+        clearThreads()
+        getPosts(user: currentUser, completion: {
+            (posts) in
+            for p in posts! {
+                addPostToThread(post: p)
+                getDataFromPath(path: p.postImagePath, completion: { (data) in
+                    if data != nil {
+                    self.loadedImagesById[p.postId] = UIImage(data: data!)
+                    }
+                })
+
+            }
+            self.postTableView.reloadData()
+        })
     }
-    
+
     // MARK: Custom methods (relating to UI)
-    
+
     func hidePostImage(sender: UIButton) {
         sender.isHidden = true
         navigationController?.navigationBar.isHidden = false
         tabBarController?.tabBar.isHidden = false
     }
-    
+
     func presentPostImage(forPost post: Post) {
         // unhide the image view button so the user can see the post's image
         if let image = loadedImagesById[post.postId] {
@@ -104,19 +119,19 @@ class PostsTableViewController: UIViewController, UITableViewDelegate, UITableVi
                 }
             })
         }
-    
+
     }
-    
+
     // MARK: Table view delegate and datasource methods
-    
+
     func numberOfSections(in tableView: UITableView) -> Int {
         return threadNames.count
     }
-    
+
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         return threadNames[section]
     }
-    
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "postCell", for: indexPath) as! PostsTableViewCell
         if let post = getPostFromIndexPath(indexPath: indexPath) {
@@ -131,24 +146,24 @@ class PostsTableViewController: UIViewController, UITableViewDelegate, UITableVi
         }
         return cell
     }
-    
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         let threadName = threadNames[section]
         return threads[threadName]!.count
     }
-    
-    
+
+
     // TODO: add the selected post as one of the current user's read posts
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if let post = getPostFromIndexPath(indexPath: indexPath), !post.read {
             presentPostImage(forPost: post)
             post.read = true
-            
+
             // YOUR CODE HERE
-            
+            currentUser.addNewReadPost(postID: post.postId)
             tableView.reloadRows(at: [indexPath], with: .automatic)
         }
-     
+
     }
-    
+
 }

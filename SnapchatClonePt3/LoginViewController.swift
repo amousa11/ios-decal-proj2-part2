@@ -18,7 +18,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         emailField.delegate = self
         passwordField.delegate = self
     }
-    
+
     override func viewDidAppear(_ animated: Bool) {
         // Checks if user is already signed in and skips login
         if FIRAuth.auth()?.currentUser != nil {
@@ -28,28 +28,40 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
-    
+
     /*
         TODO:
-        
+
         Implement login functionality using the Firebase Auth function for signing in.
         You should check the result of the function call to see if it completes without error.
         If an error occurs, display a message using a UIAlertController (e.g. "Sign in failed, try again")
         Otherwise, perform a segue to the rest of the app using the identifier "loginToMain"
-     
+
     */
     @IBAction func didAttemptLogin(_ sender: UIButton) {
         guard let emailText = emailField.text else { return }
         guard let passwordText = passwordField.text else { return }
-        
+
         // YOUR CODE HERE
+        FIRAuth.auth()?.signIn(withEmail: emailText, password: passwordText) { (user, error) in
+            if (error != nil){
+                let alertController = UIAlertController(title: "Sign In Error", message: "Please try again", preferredStyle: .alert)
+                let actionOk = UIAlertAction(title: "OK",
+                                             style: .default,
+                                             handler: nil)
+                alertController.addAction(actionOk)
+                self.present(alertController, animated: true, completion: nil)
+            } else {
+                self.performSegue(withIdentifier: "loginToMain", sender: self)
+            }
+        }
     }
-    
+
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         return true
     }
-    
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         self.view.endEditing(true)
     }
